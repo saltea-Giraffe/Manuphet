@@ -7,11 +7,18 @@
 #
 # 出力: installer\dist\Manuphet_Setup_Wizard.exe
 
+import os
 import sys
 from pathlib import Path
 
 ROOT = Path(SPECPATH).parent  # project/
 ICON = ROOT / 'assets' / 'manuphet.ico'
+ENV = Path(sys.executable).parent
+
+# 他のアプリが PATH に置いた別バージョンの DLL を拾わないよう、ビルド環境の DLL を優先する
+os.environ['PATH'] = os.pathsep.join(
+    [str(ENV / 'Library' / 'bin'), str(ENV / 'DLLs'), str(ENV), os.environ.get('PATH', '')]
+)
 
 
 # conda 環境では libffi・_tkinter・tcl/tk DLL が Library\bin や DLLs にあり、

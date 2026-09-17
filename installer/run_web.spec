@@ -7,17 +7,26 @@
 #
 # 出力: installer\dist\Manuphet_Web.exe
 
+import os
 import sys
 from pathlib import Path
 from PyInstaller.utils.hooks import collect_data_files
 
 ROOT = Path(SPECPATH).parent  # project/
 ICON = ROOT / 'assets' / 'manuphet.ico'
+ENV = Path(sys.executable).parent
+
+# DLL の依存解決は PATH を順に探すため、他のアプリ（OCR ソフト等）が PATH に置いた
+# 別バージョンの libssl / libcrypto を拾うと、exe 起動時に _ssl の読み込みで失敗する。
+# ビルドに使う Python 環境の DLL フォルダを先頭に置いて、必ずそちらを使わせる。
+os.environ['PATH'] = os.pathsep.join(
+    [str(ENV / 'Library' / 'bin'), str(ENV / 'DLLs'), str(ENV), os.environ.get('PATH', '')]
+)
 
 
 def _collect_extra_dlls():
     """conda 環境で PyInstaller が取りこぼす DLL を明示的に同梱する。"""
-    env = Path(sys.executable).parent
+    env = ENV
     candidates = []
     patterns = {
         env / 'DLLs': ['ffi*.dll', 'libffi*.dll', '_ctypes*.pyd', 'pyexpat*.pyd', '_sqlite3*.pyd'],
@@ -107,6 +116,13 @@ a = Analysis(
     excludes=['tkinter', 'IPython', 'jupyter', 'notebook', 'pytest'],
     noarchive=False,
 )
+
+# OpenSSL の DLL がビルド環境以外から混入していたら、壊れた exe を作らずに止める
+_env_root = ENV.resolve()
+for _name, _src, _kind in a.binaries:
+    if Path(_name).name.lower().startswith(('libssl', 'libcrypto')):
+        if not Path(_src).resolve().is_relative_to(_env_root):
+            raise SystemExit(f'[ERROR] {_name} がビルド環境の外から同梱されようとしています: {_src}')
 
 pyz = PYZ(a.pure)
 
