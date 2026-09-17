@@ -1,0 +1,20 @@
+{
+  "_comment": "settings.json のテンプレートです。project/settings.json（開発用）または %ProgramData%\\Manuphet\\data\\config\\settings.json に置きます。環境変数 MANUPHET_* が設定されている場合はそちらが優先されます。",
+
+  "host": "0.0.0.0",
+  "port": 8000,
+
+  "data_dir":   "C:\\ProgramData\\Manuphet\\data",
+  "models_dir": "C:\\ProgramData\\Manuphet\\data\\models",
+  "log_dir":    "C:\\ProgramData\\Manuphet\\data\\logs",
+  "config_dir": "C:\\ProgramData\\Manuphet\\data\\config",
+
+  "allow_web_train":      true,
+  "notify_auto":          true,
+  "notify_interval_min":  360,
+  "auto_retrain_monthly": true,
+  "search_iter":          100,
+  "enable_customer_features": false,
+
+  "nav_links": []
+}

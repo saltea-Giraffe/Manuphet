@@ -1,0 +1,9 @@
+{
+  "_comment": "MySQL 接続設定のテンプレートです。通常は Web 画面の「MySQL連携」タブかセットアップウィザードで保存されます（保存先: %ProgramData%\\Manuphet\\data\\config\\mysql_config.json）。",
+  "host": "127.0.0.1",
+  "port": 3306,
+  "user": "readonly_user",
+  "password": "change_me",
+  "database": "your_database",
+  "driver": "mysqlconnector"
+}

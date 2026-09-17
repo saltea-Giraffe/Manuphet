@@ -1,0 +1,18 @@
+# Manuphet conda 環境定義
+#
+# 環境作成:
+#   conda env create -f environment.yml
+#   conda activate manuphet
+#
+# または pip のみで:
+#   pip install -r requirements.txt
+
+name: manuphet
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - -r requirements.txt

@@ -1,0 +1,58 @@
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# Runtime outputs
+models/
+logs/
+data/
+*.pkl
+*.log
+*.db
+*.db-wal
+*.db-shm
+evaluation_results_*.csv
+
+# ----------------------------------------------------------------
+# 環境ごとの設定・資格情報（テンプレートの *.example.* のみ追跡する）
+# ----------------------------------------------------------------
+.env
+.env.*
+!.env.example
+settings.json
+mysql_config.json
+smtp_config.json
+email_list.json
+excluded_items.json
+weekly_items.json
+notify_settings.json
+notify_state.json
+retrain_state.json
+
+# マシン固有の起動スクリプト
+*.local.bat
+*.local.ps1
+
+# ----------------------------------------------------------------
+# PyInstaller / インストーラのビルド成果物
+# ----------------------------------------------------------------
+installer/build/
+installer/dist/
+installer/Output/
+
+# ----------------------------------------------------------------
+# OS / エディタ
+# ----------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo

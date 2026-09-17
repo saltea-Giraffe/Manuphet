@@ -1,0 +1,1632 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><!-- APP_NAME --> — 需要供給予測</title>
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/assets/manuphet.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    /* ===== DARK (default) ===== */
+    :root{
+      --bg:#06060E; --card:#0C0C1A; --panel:#08080F;
+      --yellow:#FCE300; --cyan:#00E5FF; --magenta:#FF003C; --orange:#FFA000; --pink:#FF6BD6;
+      --text:#B8C4D0; --muted:#6A7A8A;
+      --border-y:rgba(252,227,0,0.22); --border-c:rgba(0,229,255,0.22);
+      --glow-y:rgba(252,227,0,0.12); --glow-c:rgba(0,229,255,0.12);
+      --header-bg:#0A0A14; --scanline:rgba(0,0,0,0.04);
+      --title-shadow:0 0 16px rgba(252,227,0,0.5),0 0 40px rgba(252,227,0,0.15);
+      --input-text:var(--cyan); --row-hover:rgba(252,227,0,0.03);
+      --tab-bg:#08080F; --tab-active:#0F0F22; --tab-idle:#667;
+    }
+    /* ===== LIGHT ===== */
+    body.light{
+      --bg:#EEF0F5; --card:#FFFFFF; --panel:#F5F6FA;
+      --yellow:#8A6D00; --cyan:#006E8A; --magenta:#B8002A; --orange:#A06800; --pink:#A0307F;
+      --text:#2A2E3A; --muted:#6A7080;
+      --border-y:rgba(160,130,0,0.22); --border-c:rgba(0,100,140,0.22);
+      --glow-y:rgba(160,130,0,0.06); --glow-c:rgba(0,100,140,0.06);
+      --header-bg:#FAFAFD; --scanline:transparent;
+      --title-shadow:none; --input-text:#2A2E3A; --row-hover:#F3F4F8;
+      --tab-bg:#F5F6FA; --tab-active:#FFFFFF; --tab-idle:#778;
+    }
+    body.light .card{box-shadow:0 1px 6px rgba(0,0,0,0.06);}
+    body.light button:hover:not(:disabled){text-shadow:none;}
+    body.light .item:hover{background:#F0F1F5;}
+    body.light .item.sel{background:#F8F4E0;}
+    body.light .plotFrame{box-shadow:none;}
+    body.light code{background:#EEF2F6;}
+
+    [hidden]{display:none !important;}
+    html,body{height:100%;}
+    body{
+      font-family:'Rajdhani','Segoe UI','Yu Gothic UI','Meiryo',system-ui,sans-serif;
+      margin:0; background:var(--bg); color:var(--text);
+      display:flex; flex-direction:column; min-height:100vh;
+    }
+    body::after{
+      content:''; pointer-events:none; position:fixed; inset:0; z-index:9999;
+      background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--scanline) 2px,var(--scanline) 4px);
+    }
+    ::selection{background:rgba(252,227,0,0.3);}
+    ::-webkit-scrollbar{width:6px;height:6px;}
+    ::-webkit-scrollbar-track{background:var(--panel);}
+    ::-webkit-scrollbar-thumb{background:var(--border-y);}
+
+    /* ---- header ---- */
+    header{
+      padding:8px 16px; border-bottom:1px solid var(--border-y);
+      box-shadow:0 2px 30px var(--glow-y);
+      display:flex; gap:12px; align-items:center; flex-wrap:wrap; flex:0 0 auto;
+      background:var(--header-bg);
+    }
+    .brand{display:flex;align-items:center;gap:10px;}
+    .brand img{width:36px;height:36px;image-rendering:pixelated;border:1px solid var(--border-c);background:transparent;}
+    .brandName{font-size:19px;font-weight:700;color:var(--yellow);letter-spacing:.16em;text-transform:uppercase;text-shadow:var(--title-shadow);}
+    .tagline{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.15em;color:var(--muted);}
+    .versionBadge{
+      padding:2px 14px;border:1px solid var(--yellow);color:var(--yellow);
+      font-size:11px;font-weight:700;letter-spacing:.1em;white-space:nowrap;
+      font-family:'Share Tech Mono',monospace;
+      clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+    }
+    .navlinks{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+    .navlinks a,.navlinks a:visited{
+      color:var(--cyan);text-decoration:none;padding:4px 14px;border:1px solid var(--border-c);
+      font-size:12px;font-weight:700;letter-spacing:.08em;
+      clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+    }
+    .navlinks a:hover{color:var(--yellow);border-color:var(--yellow);}
+    .headerRight{margin-left:auto;display:flex;gap:8px;align-items:center;}
+
+    /* ---- tabs ---- */
+    .tabBar{display:flex;gap:2px;padding:8px 12px 0;flex:0 0 auto;flex-wrap:wrap;background:var(--tab-bg);border-bottom:1px solid var(--border-y);}
+    .tabBtn{
+      padding:8px 20px;border:1px solid var(--border-y);border-bottom:none;
+      background:var(--card);color:var(--tab-idle);cursor:pointer;
+      font-size:13px;font-weight:700;letter-spacing:.12em;
+      clip-path:polygon(10px 0%,100% 0%,100% 100%,0% 100%);font-family:inherit;
+    }
+    .tabBtn.active{background:var(--tab-active);color:var(--yellow);border-color:var(--yellow);}
+    .tabBtn:hover:not(.active){color:var(--text);}
+    .tabPane{display:none;flex:1 1 auto;min-height:0;flex-direction:column;}
+    .tabPane.active{display:flex;}
+
+    /* ---- layouts ---- */
+    .grid{flex:1 1 auto;min-height:0;display:grid;gap:10px;padding:10px;box-sizing:border-box;align-items:stretch;}
+    .g-predict{grid-template-columns:280px 1fr 420px;}
+    .g-train{grid-template-columns:300px 1fr;}
+    .g-two{grid-template-columns:1fr 1fr;}
+    .g-mysql{grid-template-columns:380px 1fr;}
+    .scrollPane{overflow:auto;}
+    @media (max-width:1180px){
+      .g-predict,.g-train,.g-two,.g-mysql{grid-template-columns:1fr;}
+      .grid{overflow:auto;}
+      .card{min-height:320px;}
+    }
+
+    .card{
+      background:var(--card);border:1px solid var(--border-y);border-top:2px solid var(--border-y);
+      padding:12px;display:flex;flex-direction:column;min-height:0;min-width:0;box-sizing:border-box;
+      box-shadow:0 0 20px var(--glow-y);
+    }
+    .cardTitle{font-weight:700;letter-spacing:.06em;margin-bottom:8px;color:var(--text);font-size:15px;}
+    .section{padding:10px;border:1px solid var(--border-y);background:var(--panel);margin-bottom:10px;}
+    .sectionTitle{font-weight:700;color:var(--yellow);font-size:12px;letter-spacing:.1em;margin-bottom:8px;}
+
+    /* ---- inputs ---- */
+    input,button,select,textarea{font-size:13px;font-family:inherit;}
+    input,select,textarea{
+      padding:7px 9px;border:1px solid var(--border-c);border-left:2px solid var(--border-c);
+      background:var(--panel);color:var(--input-text);box-sizing:border-box;
+      font-family:'Share Tech Mono','Consolas','Yu Gothic UI',monospace;min-width:0;
+    }
+    select{color:var(--text);}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 10px var(--glow-c);}
+    input::placeholder{color:var(--muted);opacity:.7;}
+    input[type="checkbox"]{width:auto;}
+    .w100{width:100%;}
+    label.fld{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);letter-spacing:.06em;}
+
+    button{
+      padding:8px 14px;border:1px solid rgba(252,227,0,0.35);
+      background:rgba(252,227,0,0.06);color:var(--yellow);cursor:pointer;
+      font-weight:700;letter-spacing:.08em;white-space:nowrap;
+      clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+      font-family:inherit;
+    }
+    button:hover:not(:disabled){background:rgba(252,227,0,0.16);box-shadow:0 0 16px var(--glow-y);}
+    button.secondary{background:rgba(0,229,255,0.06);color:var(--cyan);border-color:var(--border-c);}
+    button.secondary:hover:not(:disabled){background:rgba(0,229,255,0.16);}
+    button.danger{background:rgba(255,0,60,0.08);color:var(--magenta);border-color:rgba(255,0,60,0.4);}
+    button.warn{background:rgba(255,160,0,0.08);color:var(--orange);border-color:rgba(255,160,0,0.35);}
+    button:disabled{opacity:.3;cursor:not-allowed;}
+    button.sm{padding:3px 9px;font-size:11px;clip-path:none;}
+
+    /* ---- list ---- */
+    .list{flex:1 1 auto;min-height:120px;overflow:auto;border:1px solid var(--border-c);background:var(--panel);}
+    .item{
+      padding:8px 12px;border-bottom:1px solid rgba(128,128,128,0.08);
+      cursor:pointer;display:flex;align-items:center;gap:8px;border-left:2px solid transparent;
+      font-family:'Share Tech Mono','Consolas','Yu Gothic UI',monospace;font-size:13px;
+    }
+    .item:hover{background:var(--row-hover);border-left-color:var(--cyan);}
+    .item.sel{border-left-color:var(--yellow);color:var(--yellow);}
+    .itemLabel{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .empty{padding:12px;color:var(--muted);}
+
+    /* ---- misc ---- */
+    .muted{color:var(--muted);}
+    .small{font-size:12px;}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+    .row.end{align-items:flex-end;}
+    .grow{flex:1 1 auto;}
+    .pill{
+      display:inline-block;padding:2px 12px;border:1px solid var(--border-y);color:var(--yellow);
+      font-size:11px;font-weight:700;letter-spacing:.06em;font-family:'Share Tech Mono','Yu Gothic UI',monospace;
+      clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);white-space:nowrap;
+    }
+    .pill.cyan{border-color:var(--border-c);color:var(--cyan);}
+    .pill.red{border-color:rgba(255,0,60,0.5);color:var(--magenta);}
+    .pill.orange{border-color:rgba(255,160,0,0.5);color:var(--orange);}
+    .chips{display:flex;gap:6px;flex-wrap:wrap;}
+    .plotFrame{flex:1 1 auto;min-height:260px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-y);box-shadow:inset 0 0 30px rgba(0,0,0,0.5);}
+    #plot{width:100%;height:100%;object-fit:contain;display:block;}
+    .msg{margin-top:8px;white-space:pre-wrap;max-height:140px;overflow:auto;font-size:12px;color:var(--muted);}
+    .msg.err{color:var(--magenta);}
+    .msg.ok{color:var(--cyan);}
+    .tableWrap{overflow:auto;border:1px solid var(--border-c);background:var(--panel);}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    th{
+      color:var(--yellow);font-weight:700;letter-spacing:.06em;font-size:11px;padding:7px 6px;
+      border-bottom:1px solid var(--border-y);text-align:left;white-space:nowrap;position:sticky;top:0;background:var(--panel);
+    }
+    td{border-bottom:1px solid rgba(128,128,128,0.08);padding:6px;text-align:left;vertical-align:top;}
+    td.num,th.num{text-align:right;font-family:'Share Tech Mono','Consolas',monospace;}
+    tr:hover td{background:var(--row-hover);}
+    .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px;}
+    .kv .k{color:var(--muted);}
+    .kv .v{font-family:'Share Tech Mono','Consolas','Yu Gothic UI',monospace;}
+    .alertBox{white-space:pre-wrap;padding:8px;border:1px solid rgba(255,0,60,0.3);color:var(--magenta);font-size:12px;margin:8px 0;}
+    .alertBox.none{border-color:var(--border-c);color:var(--cyan);}
+    .banner{margin:10px 10px 0;padding:10px 14px;border:1px solid var(--border-c);background:var(--glow-c);display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+    .subTabs{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;}
+    .subTabs button{clip-path:none;}
+    .subTabs button.active{background:var(--glow-y);border-color:var(--yellow);box-shadow:inset 0 -2px 0 var(--yellow);}
+    .subPane{display:none;flex-direction:column;min-height:0;flex:1 1 auto;}
+    .subPane.active{display:flex;}
+    .step{display:flex;gap:8px;align-items:center;margin:10px 0 6px;}
+    .stepNo{display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border:1px solid var(--yellow);color:var(--yellow);font-size:11px;font-weight:700;}
+    .mapGrid{display:grid;grid-template-columns:minmax(140px,auto) 1fr;gap:6px 10px;align-items:center;}
+    .req{color:var(--magenta);}
+    .progOuter{background:var(--panel);height:6px;overflow:hidden;border-bottom:1px solid var(--border-y);margin:8px 0;}
+    .progInner{height:100%;background:var(--yellow);transition:width .4s ease;min-width:2px;}
+    .progInner.done{background:var(--cyan);}
+    .statusDot{display:inline-block;width:8px;height:8px;background:#556;margin-right:6px;vertical-align:middle;}
+    .statusDot.running{background:var(--yellow);animation:pulse 1s infinite;}
+    .statusDot.done{background:var(--cyan);}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+    .failList{background:var(--panel);padding:8px;font-size:12px;max-height:160px;overflow:auto;border:1px solid rgba(255,0,60,0.25);color:var(--magenta);}
+    details summary{color:var(--cyan);font-weight:700;cursor:pointer;}
+    code{background:rgba(0,229,255,0.08);padding:1px 6px;border:1px solid var(--border-c);color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:12px;}
+    a{color:var(--cyan);}
+    pre.csvPreview{margin:0;max-height:140px;overflow:auto;font-size:12px;padding:8px;background:var(--panel);border:1px solid var(--border-c);white-space:pre;}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="/assets/manuphet_64.png" alt="" />
+      <div>
+        <div class="brandName"><!-- APP_NAME --></div>
+        <div class="tagline">// DEMAND &amp; SUPPLY FORECAST</div>
+      </div>
+    </div>
+    <div class="versionBadge">Ver <!-- VERSION --></div>
+    <div class="navlinks">
+<!-- NAV_LINKS -->
+    </div>
+    <div class="headerRight">
+      <button class="secondary" onclick="refreshDb()" title="登録データを読み込み直します">再読込</button>
+      <button class="danger" onclick="runNotify(false)" title="在庫不足の見込みを今すぐチェックして通知します">通知チェック</button>
+      <button id="themeToggle" class="sm" onclick="toggleTheme()" style="font-size:16px;padding:4px 10px;" title="ダーク/ライト切替">&#9789;</button>
+    </div>
+  </header>
+
+  <div class="tabBar">
+    <button class="tabBtn active" id="tab-predict" onclick="switchTab('predict')">予測</button>
+    <button class="tabBtn" id="tab-data"   onclick="switchTab('data')">データ入力</button>
+    <button class="tabBtn" id="tab-mysql"  onclick="switchTab('mysql')">MySQL連携</button>
+    <button class="tabBtn" id="tab-train"  onclick="switchTab('train')">学習管理</button>
+    <button class="tabBtn" id="tab-manage" onclick="switchTab('manage')">品目設定</button>
+    <button class="tabBtn" id="tab-notify" onclick="switchTab('notify')">通知設定</button>
+  </div>
+
+  <!-- ================= 予測 ================= -->
+  <div class="tabPane active" id="pane-predict">
+    <div class="banner" id="emptyBanner" hidden>
+      <span>需要実績がまだ登録されていません。「データ入力」または「MySQL連携」タブから登録するか、サンプルデータで動作を確認できます。</span>
+      <button class="secondary" onclick="loadSample()">サンプルデータを投入</button>
+      <button onclick="switchTab('data')">データ入力へ</button>
+    </div>
+    <div class="grid g-predict">
+      <section class="card">
+        <div class="cardTitle">品目リスト</div>
+        <div class="row">
+          <input id="q" class="grow" placeholder="品目コードで検索" onkeydown="if(event.key==='Enter') loadItems()" />
+          <button onclick="loadItems()">検索</button>
+        </div>
+        <div style="height:8px"></div>
+        <div id="list" class="list"></div>
+        <div id="listCount" class="muted small" style="margin-top:6px;"></div>
+      </section>
+
+      <section class="card">
+        <div class="row">
+          <div>選択中: <span id="sel" class="pill">---</span></div>
+          <div class="row" style="margin-left:auto;">
+            <button id="btnTrain" class="secondary" onclick="trainSelected()" disabled>学習</button>
+            <button id="btnPredict" onclick="predictOne()" disabled>更新</button>
+          </div>
+        </div>
+        <div class="muted small" style="margin:6px 0;">実績（黄）・直近期間のバックテスト（水色）・今後の予測（桃色）を表示します。</div>
+        <div class="plotFrame"><img id="plot" alt="" /></div>
+        <div id="msg" class="msg"></div>
+      </section>
+
+      <section class="card scrollPane">
+        <div class="cardTitle">需要供給</div>
+        <div id="supplySummary" class="muted small">品目を選択してください。</div>
+        <div id="alerts"></div>
+        <div class="sectionTitle" style="margin-top:6px;">部品在庫</div>
+        <div class="tableWrap">
+          <table>
+            <thead><tr><th>部品</th><th class="num">使用数</th><th class="num">在庫</th><th class="num">1か月ペース</th><th class="num">半年ペース</th></tr></thead>
+            <tbody id="parts"><tr><td colspan="5" class="empty">—</td></tr></tbody>
+          </table>
+        </div>
+        <div class="muted small" style="margin-top:6px;">残日数 = (製品在庫 + 部品在庫 ÷ 使用数) ÷ 予測需要。部品構成は「データ入力 &gt; 部品構成」で登録します。</div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ================= データ入力 ================= -->
+  <div class="tabPane" id="pane-data">
+    <div class="grid" style="grid-template-columns:1fr;">
+      <section class="card">
+        <div class="row" style="margin-bottom:10px;">
+          <div class="cardTitle" style="margin:0;">登録済みデータ</div>
+          <div id="dataSummary" class="chips"></div>
+          <div class="row" style="margin-left:auto;">
+            <button class="secondary" onclick="loadSample()">サンプルデータを投入</button>
+          </div>
+        </div>
+        <div class="subTabs">
+          <button class="secondary active" id="sub-demand" onclick="switchSub('demand')">需要実績</button>
+          <button class="secondary" id="sub-inventory" onclick="switchSub('inventory')">在庫</button>
+          <button class="secondary" id="sub-bom" onclick="switchSub('bom')">部品構成</button>
+          <button class="secondary" id="sub-csv" onclick="switchSub('csv')">CSV取込</button>
+        </div>
+
+        <!-- 需要実績 -->
+        <div class="subPane active" id="subpane-demand">
+          <div class="section">
+            <div class="sectionTitle">需要実績を追加（出荷・販売・受注など、予測したい数量の実績）</div>
+            <div class="row end">
+              <label class="fld">日付<input id="dDate" type="date" /></label>
+              <label class="fld grow">品目コード<input id="dItem" list="itemCodes" placeholder="例: ITEM-001" /></label>
+              <label class="fld">数量<input id="dQty" type="number" step="any" min="0" style="width:110px;" /></label>
+              <label class="fld grow">顧客（任意）<input id="dCust" placeholder="例: CUSTOMER-01" /></label>
+              <button onclick="addDemand()">追加</button>
+            </div>
+            <div id="dMsg" class="msg"></div>
+          </div>
+          <div class="row" style="margin-bottom:6px;">
+            <input id="dSearch" class="grow" placeholder="品目コード・顧客で絞り込み" onkeydown="if(event.key==='Enter'){demandOffset=0;loadDemand();}" />
+            <button class="secondary" onclick="demandOffset=0;loadDemand()">絞り込み</button>
+            <button class="sm secondary" onclick="pageDemand(-1)">&lt; 前</button>
+            <span id="dPage" class="muted small"></span>
+            <button class="sm secondary" onclick="pageDemand(1)">次 &gt;</button>
+          </div>
+          <div class="tableWrap grow">
+            <table>
+              <thead><tr><th>日付</th><th>品目コード</th><th class="num">数量</th><th>顧客</th><th>取込元</th><th></th></tr></thead>
+              <tbody id="dRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 在庫 -->
+        <div class="subPane" id="subpane-inventory">
+          <div class="section">
+            <div class="sectionTitle">在庫を登録・更新（製品・部品共通。同じコードは上書きされます）</div>
+            <div class="row end">
+              <label class="fld grow">品目/部品コード<input id="iCode" list="itemCodes" placeholder="例: ITEM-001 / PART-001" /></label>
+              <label class="fld">在庫数<input id="iQty" type="number" step="any" style="width:130px;" /></label>
+              <button onclick="saveInventory()">登録・更新</button>
+            </div>
+            <div id="iMsg" class="msg"></div>
+          </div>
+          <div class="row" style="margin-bottom:6px;">
+            <input id="iSearch" class="grow" placeholder="コードで絞り込み" onkeydown="if(event.key==='Enter') loadInventory()" />
+            <button class="secondary" onclick="loadInventory()">絞り込み</button>
+            <span id="iCount" class="muted small"></span>
+          </div>
+          <div class="tableWrap grow">
+            <table>
+              <thead><tr><th>コード</th><th class="num">在庫数</th><th>取込元</th><th>更新日時</th><th></th></tr></thead>
+              <tbody id="iRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 部品構成 -->
+        <div class="subPane" id="subpane-bom">
+          <div class="section">
+            <div class="sectionTitle">部品構成を登録・更新（品目 1 台に使う部品と数量）</div>
+            <div class="row end">
+              <label class="fld grow">品目コード<input id="bItem" list="itemCodes" placeholder="例: ITEM-001" /></label>
+              <label class="fld grow">部品コード<input id="bComp" placeholder="例: PART-001" /></label>
+              <label class="fld">1台あたり使用数<input id="bUsage" type="number" step="any" min="0" value="1" style="width:120px;" /></label>
+              <button onclick="saveBom()">登録・更新</button>
+            </div>
+            <div class="muted small" style="margin-top:6px;">部品の在庫数は「在庫」に部品コードで登録してください。</div>
+            <div id="bMsg" class="msg"></div>
+          </div>
+          <div class="row" style="margin-bottom:6px;">
+            <input id="bSearch" class="grow" placeholder="品目・部品コードで絞り込み" onkeydown="if(event.key==='Enter') loadBom()" />
+            <button class="secondary" onclick="loadBom()">絞り込み</button>
+            <span id="bCount" class="muted small"></span>
+          </div>
+          <div class="tableWrap grow">
+            <table>
+              <thead><tr><th>品目コード</th><th>部品コード</th><th class="num">使用数</th><th class="num">部品在庫</th><th>取込元</th><th></th></tr></thead>
+              <tbody id="bRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- CSV取込 -->
+        <div class="subPane" id="subpane-csv">
+          <div class="section">
+            <div class="sectionTitle">CSV ファイルから一括登録（UTF-8、1 行目は列名）</div>
+            <div class="row end">
+              <label class="fld">取込先
+                <select id="cTarget" onchange="renderCsvHelp()">
+                  <option value="demand">需要実績</option>
+                  <option value="inventory">在庫</option>
+                  <option value="bom">部品構成</option>
+                </select>
+              </label>
+              <label class="fld grow">ファイル<input id="cFile" type="file" accept=".csv,text/csv" onchange="previewCsv()" /></label>
+              <label class="fld">取込方法
+                <select id="cMode">
+                  <option value="replace_source">同じファイル名で取り込んだデータを置き換える</option>
+                  <option value="append">追加する</option>
+                  <option value="replace_all">取込先のデータをすべて置き換える</option>
+                </select>
+              </label>
+              <button onclick="importCsv()">取込</button>
+            </div>
+            <div id="cHelp" class="muted small" style="margin-top:8px;"></div>
+            <div id="cMsg" class="msg"></div>
+          </div>
+          <pre id="cPreview" class="csvPreview" hidden></pre>
+          <details style="margin-top:14px;">
+            <summary>データの削除</summary>
+            <div class="row" style="margin-top:8px;">
+              <select id="clearTarget">
+                <option value="demand">需要実績</option>
+                <option value="inventory">在庫</option>
+                <option value="bom">部品構成</option>
+              </select>
+              <button class="danger" onclick="clearData()">選択したデータをすべて削除</button>
+            </div>
+          </details>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ================= MySQL連携 ================= -->
+  <div class="tabPane" id="pane-mysql">
+    <div class="grid g-mysql">
+      <section class="card scrollPane">
+        <div class="cardTitle">接続設定</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="row">
+            <label class="fld grow">ホスト<input id="mHost" placeholder="127.0.0.1" /></label>
+            <label class="fld">ポート<input id="mPort" type="number" value="3306" style="width:90px;" /></label>
+          </div>
+          <label class="fld">データベース<input id="mDb" /></label>
+          <label class="fld">ユーザー<input id="mUser" autocomplete="off" /></label>
+          <label class="fld">パスワード<input id="mPass" type="password" autocomplete="new-password" /></label>
+          <div id="mPassStatus" class="muted small"></div>
+          <label class="fld">ドライバ
+            <select id="mDriver">
+              <option value="mysqlconnector">mysql-connector-python</option>
+              <option value="pymysql">PyMySQL</option>
+            </select>
+          </label>
+          <div class="row">
+            <button class="secondary" onclick="saveMysqlConfig()">保存</button>
+            <button onclick="testMysql()">接続テスト</button>
+          </div>
+          <div class="muted small">MySQL へは参照（SELECT）のみ行い、データは変更しません。読み取り専用ユーザーの利用をおすすめします。</div>
+          <div id="mMsg" class="msg"></div>
+        </div>
+
+        <div class="cardTitle" style="margin-top:16px;">保存済みの取込定義</div>
+        <div class="row" style="margin-bottom:6px;">
+          <button class="warn" onclick="syncAll()">すべて同期</button>
+          <span class="muted small">月次自動再学習の前にも自動で同期します。</span>
+        </div>
+        <div id="jobList" class="list" style="flex:0 0 auto;max-height:340px;"></div>
+        <div id="jobMsg" class="msg"></div>
+      </section>
+
+      <section class="card scrollPane">
+        <div class="cardTitle">取込の作成</div>
+
+        <div class="step"><span class="stepNo">1</span><b>テーブルを選ぶ</b></div>
+        <div class="row">
+          <select id="mTable" class="grow" onchange="onTableChange()"><option value="">（接続テスト後に読み込み）</option></select>
+          <button class="secondary" onclick="loadTables()">一覧を読み込む</button>
+        </div>
+        <div id="rawWrap" hidden>
+          <div class="muted small" style="margin:6px 0;">テーブルの中身（先頭 20 行）</div>
+          <div class="tableWrap" style="max-height:220px;"><table id="rawTable"></table></div>
+        </div>
+
+        <div class="step"><span class="stepNo">2</span><b>取込先と列の対応付け</b></div>
+        <div class="row" style="margin-bottom:8px;">
+          <label class="fld">取込先
+            <select id="mTarget" onchange="renderMapping(true)">
+              <option value="demand">需要実績</option>
+              <option value="inventory">在庫</option>
+              <option value="bom">部品構成</option>
+            </select>
+          </label>
+          <span class="muted small">必要な項目に対応する列だけを選んでください（<span class="req">*</span> は必須）。</span>
+        </div>
+        <div id="mapGrid" class="mapGrid"></div>
+
+        <div class="step"><span class="stepNo">3</span><b>取り込む行を絞り込む（任意）</b></div>
+        <div id="filterRows" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <div class="row" style="margin-top:6px;">
+          <button class="sm secondary" onclick="addFilterRow()">＋ 条件を追加</button>
+          <span class="muted small">条件はすべて AND で結合します。LIKE は % をワイルドカードに、IN はカンマ区切りで指定します。</span>
+        </div>
+
+        <div class="step"><span class="stepNo">4</span><b>確認して取り込む</b></div>
+        <div class="row end">
+          <button class="secondary" onclick="previewMapped()">プレビュー</button>
+          <label class="fld">取込方法
+            <select id="mMode">
+              <option value="replace_source">同じ取込元のデータを置き換える（再同期向け）</option>
+              <option value="append">追加する</option>
+              <option value="replace_all">取込先のデータをすべて置き換える</option>
+            </select>
+          </label>
+          <label class="fld grow">取込定義として保存する名前（任意）<input id="mJobName" placeholder="例: 販売実績_月次" /></label>
+          <button onclick="runImport()">取込</button>
+        </div>
+        <div id="impMsg" class="msg"></div>
+        <div id="prevWrap" hidden>
+          <div id="prevInfo" class="muted small" style="margin:6px 0;"></div>
+          <div class="tableWrap" style="max-height:260px;"><table id="prevTable"></table></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ================= 学習管理 ================= -->
+  <div class="tabPane" id="pane-train">
+    <div class="grid g-train">
+      <section class="card">
+        <div class="cardTitle">品目リスト（個別学習）</div>
+        <div class="row">
+          <input id="tq" class="grow" placeholder="品目コードで検索" onkeydown="if(event.key==='Enter') loadTrainList()" />
+          <button onclick="loadTrainList()">検索</button>
+        </div>
+        <div style="height:8px"></div>
+        <div id="trainList" class="list"></div>
+      </section>
+
+      <section class="card scrollPane">
+        <div class="row">
+          <span class="statusDot" id="trainDot"></span>
+          <span id="trainStatusLabel" class="muted">待機中</span>
+          <div style="margin-left:auto;">
+            <button id="btnTrainAll" class="warn" onclick="startTrainAll()">全品目を今すぐ学習</button>
+          </div>
+        </div>
+        <div class="progOuter" id="progOuter" hidden><div class="progInner" id="progInner" style="width:0%"></div></div>
+        <div id="progText" class="muted small"></div>
+        <div id="failArea" hidden style="margin-top:8px;">
+          <div class="muted small" style="margin-bottom:4px;">失敗した学習:</div>
+          <div id="failList" class="failList"></div>
+        </div>
+
+        <div class="section" style="margin-top:16px;">
+          <div class="sectionTitle">月次自動再学習</div>
+          <div class="kv">
+            <span class="k">最終実行</span><span class="v" id="lastRetrainAt">---</span>
+            <span class="k">次回予定</span><span class="v" id="nextRetrainAt">---</span>
+            <span class="k">自動再学習</span><span id="autoRetrainBadge" class="pill">---</span>
+          </div>
+          <div class="muted small" id="autoRetrainNote" style="margin-top:8px;"></div>
+        </div>
+        <div class="muted small">データ件数が少ない品目（月次 12 か月未満 / 週次 20 週未満）は簡易モデル（Ridge 回帰）で学習します。</div>
+        <div id="trainMsg" class="msg"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ================= 品目設定 ================= -->
+  <div class="tabPane" id="pane-manage">
+    <div class="grid g-two">
+      <section class="card">
+        <div class="row" style="margin-bottom:8px;">
+          <span class="cardTitle" style="margin:0;">予測・学習から除外する品目</span>
+          <span id="excludedCount" class="pill" style="margin-left:auto;">0件</span>
+        </div>
+        <div class="muted small" style="margin-bottom:8px;">除外すると予測タブの一覧に表示されず、一括学習・通知の対象からも外れます。</div>
+        <input id="excludeSearch" class="w100" placeholder="品目コードで絞り込み" oninput="renderManageList()" />
+        <div style="height:8px"></div>
+        <div id="manageList" class="list"></div>
+      </section>
+
+      <section class="card">
+        <div class="row" style="margin-bottom:8px;">
+          <span class="cardTitle" style="margin:0;">週次モデルで予測する品目</span>
+          <span id="weeklyCount" class="pill cyan" style="margin-left:auto;">0件</span>
+        </div>
+        <div class="muted small" style="margin-bottom:8px;">需要が多く週単位の変動を捉えたい品目は週次（日曜締め）、それ以外は月次で学習します。切り替えた後は再学習してください。</div>
+        <input id="weeklySearch" class="w100" placeholder="品目コードで絞り込み" oninput="renderWeeklyList()" />
+        <div style="height:8px"></div>
+        <div id="weeklyList" class="list"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ================= 通知設定 ================= -->
+  <div class="tabPane" id="pane-notify">
+    <div class="grid g-two" style="align-items:start;">
+      <section class="card">
+        <div class="cardTitle">在庫不足の通知</div>
+        <div class="section">
+          <div class="row">
+            <label class="row" style="gap:6px;"><input id="notifyEnabled" type="checkbox" onchange="saveNotifySettings()" />自動通知を有効にする</label>
+            <button class="danger" style="margin-left:auto;" onclick="runNotify(true)">今すぐ通知チェック</button>
+          </div>
+          <div class="muted small" style="margin-top:8px;">
+            在庫（製品・部品）が 1 か月以内または半年以内に不足する見込みになると、下の送信先へメールします。
+            同じ品目・部品への通知は「初回 → 30 日後 → 180 日後」の最大 3 回で、在庫が増えるとリセットされます。
+            在庫が未登録の品目・部品は通知しません。
+          </div>
+          <div id="notifyMsg" class="msg"></div>
+        </div>
+        <div class="cardTitle">送信先</div>
+        <div class="row" style="margin-bottom:8px;">
+          <input id="newEmail" class="grow" placeholder="追加するメールアドレス" onkeydown="if(event.key==='Enter') addEmail()" />
+          <button class="secondary" onclick="addEmail()">追加</button>
+        </div>
+        <div id="emailList" class="list" style="min-height:140px;"></div>
+        <div id="emailMsg" class="msg"></div>
+      </section>
+
+      <section class="card">
+        <div class="cardTitle">送信元メール（SMTP）</div>
+        <details style="margin-bottom:12px;">
+          <summary>Gmail を使う場合 — アプリパスワードの取得手順</summary>
+          <div class="section small" style="margin-top:8px;line-height:1.8;">
+            前提: Google アカウントで 2 段階認証が有効になっていること<br>
+            1. <a href="https://myaccount.google.com/security" target="_blank" rel="noopener">myaccount.google.com/security</a> を開く<br>
+            2. 「2 段階認証プロセス」→「アプリパスワード」を開く<br>
+            3. アプリ名に「Manuphet」など任意の名前を入力して作成<br>
+            4. 表示された 16 文字のパスワード（スペース不要）を下の「パスワード」欄に貼り付ける<br>
+            設定値: SMTP サーバー <code>smtp.gmail.com</code> / ポート <code>587</code>
+          </div>
+        </details>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="row">
+            <label class="fld grow">SMTP サーバー<input id="smtpServer" value="smtp.gmail.com" /></label>
+            <label class="fld">ポート<input id="smtpPort" type="number" value="587" style="width:90px;" /></label>
+          </div>
+          <label class="fld">ユーザー名（メールアドレス）<input id="smtpUser" placeholder="your.address@example.com" autocomplete="off" /></label>
+          <label class="fld">送信元表示アドレス（空欄 = ユーザー名と同じ）<input id="smtpFrom" /></label>
+          <label class="fld">パスワード / アプリパスワード<input id="smtpPass" type="password" autocomplete="new-password" /></label>
+          <div id="smtpPassStatus" class="muted small"></div>
+          <div class="row">
+            <button class="secondary" onclick="saveSmtpConfig()">保存</button>
+            <button onclick="testSmtp()">テスト送信</button>
+          </div>
+        </div>
+        <div id="smtpMsg" class="msg"></div>
+      </section>
+    </div>
+  </div>
+
+  <datalist id="itemCodes"></datalist>
+
+  <script>
+    /* ================= 共通 ================= */
+    const TARGET_LABELS = {demand:'需要実績', inventory:'在庫', bom:'部品構成'};
+    const MODE_LABELS = {weekly:'週次', monthly:'月次'};
+    let META = null;
+    let selected = '';
+    let plotReqToken = 0, supplyReqToken = 0;
+    let trainPolling = null;
+
+    function esc(s){
+      return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function $(id){ return document.getElementById(id); }
+    function fmtNum(v, digits=1){
+      if(v === null || v === undefined || v === '' || isNaN(Number(v))) return '-';
+      return Number(v).toLocaleString('ja-JP', {maximumFractionDigits: digits});
+    }
+    function fmtDays(v){ return (v === null || v === undefined) ? '-' : fmtNum(v, 0) + ' 日'; }
+    function setMsg(id, text, kind){
+      const el = $(id); if(!el) return;
+      el.textContent = text || '';
+      el.className = 'msg' + (kind ? ' ' + kind : '');
+    }
+
+    async function api(url, opts={}){
+      const o = Object.assign({}, opts);
+      if(o.json !== undefined){
+        o.method = o.method || 'POST';
+        o.headers = Object.assign({'Content-Type':'application/json'}, o.headers || {});
+        o.body = JSON.stringify(o.json);
+        delete o.json;
+      }
+      const r = await fetch(url, o);
+      if(!r.ok){
+        const t = await r.text();
+        let d = t;
+        try{
+          const j = JSON.parse(t);
+          d = Array.isArray(j.detail) ? j.detail.map(x => (x.loc||[]).slice(-1)[0] + ': ' + x.msg).join('\n') : (j.detail ?? t);
+        }catch(e){}
+        throw new Error(d || ('HTTP ' + r.status));
+      }
+      return r;
+    }
+    async function apiJson(url, opts){ return (await api(url, opts)).json(); }
+
+    /* ---- theme ---- */
+    function applyTheme(theme){
+      document.body.classList.toggle('light', theme === 'light');
+      $('themeToggle').innerHTML = theme === 'light' ? '&#9728;' : '&#9789;';
+      try{ localStorage.setItem('manuphet_theme', theme); }catch(e){}
+    }
+    function toggleTheme(){ applyTheme(document.body.classList.contains('light') ? 'dark' : 'light'); }
+    (function(){
+      let saved = null;
+      try{ saved = localStorage.getItem('manuphet_theme'); }catch(e){}
+      if(saved) applyTheme(saved);
+    })();
+
+    function switchTab(name){
+      document.querySelectorAll('.tabBtn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tabPane').forEach(p => p.classList.remove('active'));
+      $('tab-' + name).classList.add('active');
+      $('pane-' + name).classList.add('active');
+      history.replaceState(null, '', '#' + name);
+      if(name === 'data')   { loadDataSummary(); switchSub(currentSub); }
+      if(name === 'mysql')  { loadMysqlConfig(); loadJobs(); }
+      if(name === 'train')  { loadTrainList().catch(()=>{}); refreshTrainStatus(); }
+      if(name === 'manage') { loadManageData().catch(()=>{}); }
+      if(name === 'notify') { loadNotifyTab(); }
+    }
+
+    async function loadItemDatalist(){
+      try{
+        const j = await apiJson('/api/items?include_excluded=true');
+        $('itemCodes').innerHTML = j.items.map(c => '<option value="' + esc(c) + '"></option>').join('');
+      }catch(e){}
+    }
+
+    async function refreshDb(){
+      setMsg('msg', '再読込中...');
+      try{
+        await api('/api/refresh', {method:'POST'});
+        await loadItems();
+        loadItemDatalist();
+        setMsg('msg', '再読込しました', 'ok');
+      }catch(e){ setMsg('msg', '再読込に失敗しました: ' + e.message, 'err'); }
+    }
+
+    async function loadSample(){
+      if(!confirm('サンプルデータ（品目 SAMPLE-A / B / C）を登録します。よろしいですか？')) return;
+      try{
+        const j = await apiJson('/api/data/load_sample', {json:{}});
+        const r = j.result || {};
+        alert('サンプルデータを登録しました\n需要実績: ' + (r.demand?.imported ?? 0) + ' 件\n在庫: ' + (r.inventory?.imported ?? 0) + ' 件\n部品構成: ' + (r.bom?.imported ?? 0) + ' 件\n\n予測するには品目を選んで「学習」を実行してください。');
+        await afterDataChange();
+      }catch(e){ alert('サンプルデータの登録に失敗しました: ' + e.message); }
+    }
+
+    async function afterDataChange(){
+      await Promise.allSettled([loadItems(), loadDataSummary(), loadItemDatalist()]);
+      if($('pane-data').classList.contains('active')) switchSub(currentSub);
+    }
+
+    /* ================= 予測 ================= */
+    async function loadItems(){
+      const q = $('q').value || '';
+      const j = await apiJson('/api/items?search=' + encodeURIComponent(q));
+      const list = $('list');
+      list.innerHTML = '';
+      j.items.forEach(code => {
+        const div = document.createElement('div');
+        div.className = 'item' + (code === selected ? ' sel' : '');
+        div.innerHTML = '<span class="itemLabel">' + esc(code) + '</span>';
+        div.onclick = () => {
+          list.querySelectorAll('.item').forEach(x => x.classList.remove('sel'));
+          div.classList.add('sel');
+          selectItem(code);
+        };
+        list.appendChild(div);
+      });
+      if(!j.items.length) list.innerHTML = '<div class="empty">該当する品目がありません</div>';
+      $('listCount').textContent = '件数: ' + j.items.length;
+      if(!q){
+        const st = await apiJson('/api/status').catch(() => null);
+        $('emptyBanner').hidden = !(st && st.data && st.data.demand_count === 0);
+      }
+    }
+
+    function selectItem(code){
+      selected = code;
+      $('sel').textContent = code;
+      $('btnPredict').disabled = !code;
+      $('btnTrain').disabled = !code;
+      setMsg('msg', '');
+      loadPlot(code, true);
+      loadSupply(code);
+    }
+
+    async function loadPlot(code, announce){
+      if(!code) return;
+      const token = ++plotReqToken;
+      const img = $('plot');
+      if(img.dataset.objurl){ URL.revokeObjectURL(img.dataset.objurl); img.dataset.objurl = ''; }
+      img.removeAttribute('src');
+      if(announce) setMsg('msg', 'グラフを作成中...');
+      try{
+        const r = await api('/api/forecast_plot?item_code=' + encodeURIComponent(code) + '&_=' + Date.now());
+        const blob = await r.blob();
+        if(token !== plotReqToken || selected !== code) return;
+        const url = URL.createObjectURL(blob);
+        img.dataset.objurl = url;
+        img.src = url;
+        if(announce) setMsg('msg', '');
+      }catch(e){
+        if(token !== plotReqToken) return;
+        setMsg('msg', 'グラフを表示できません: ' + e.message, 'err');
+      }
+    }
+
+    async function loadSupply(code){
+      if(!code) return;
+      const token = ++supplyReqToken;
+      $('supplySummary').textContent = '計算中...';
+      $('alerts').innerHTML = '';
+      $('parts').innerHTML = '';
+      try{
+        const j = await apiJson('/api/supply?item_code=' + encodeURIComponent(code));
+        if(token !== supplyReqToken || selected !== code) return;
+        const p = j.product;
+        $('supplySummary').innerHTML =
+          '<div class="kv">' +
+          '<span class="k">モデル</span><span class="v">' + esc(MODE_LABELS[j.mode] || j.mode) + (j.has_model ? '' : '（未学習）') + '</span>' +
+          '<span class="k">予測需要 1か月</span><span class="v">' + fmtNum(j.forecast_1mo) + '</span>' +
+          '<span class="k">予測需要 6か月</span><span class="v">' + fmtNum(j.forecast_6mo) + '</span>' +
+          '<span class="k">製品在庫</span><span class="v">' + (p.has_inventory ? fmtNum(p.on_hand) : '未登録') + '</span>' +
+          '<span class="k">在庫残日数</span><span class="v">1か月ペース ' + fmtDays(p.days_1mo) + ' / 半年ペース ' + fmtDays(p.days_6mo) + '</span>' +
+          '</div>';
+        const alerts = j.alerts || [];
+        $('alerts').innerHTML = alerts.length
+          ? '<div class="alertBox">' + alerts.map(esc).join('\n') + '</div>'
+          : '<div class="alertBox none">不足の見込みはありません</div>';
+        const rows = (j.components || []).map(c => {
+          const pill = c.alert ? ' <span class="pill ' + (c.alert === '1か月以内' ? 'red' : 'orange') + '">' + esc(c.alert) + '</span>' : '';
+          return '<tr><td>' + esc(c.component_code) + pill + '</td>' +
+            '<td class="num">' + fmtNum(c.usage_per_unit, 3) + '</td>' +
+            '<td class="num">' + (c.has_inventory ? fmtNum(c.on_hand) : '<span class="muted">未登録</span>') + '</td>' +
+            '<td class="num">' + fmtDays(c.days_1mo) + '</td>' +
+            '<td class="num">' + fmtDays(c.days_6mo) + '</td></tr>';
+        });
+        $('parts').innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5" class="empty">部品構成が登録されていません</td></tr>';
+      }catch(e){
+        if(token !== supplyReqToken) return;
+        $('supplySummary').textContent = '取得に失敗しました';
+        $('alerts').innerHTML = '<div class="alertBox">' + esc(e.message) + '</div>';
+      }
+    }
+
+    async function predictOne(){
+      if(!selected) return;
+      setMsg('msg', '更新中...');
+      await Promise.allSettled([loadPlot(selected, false), loadSupply(selected)]);
+      setMsg('msg', '更新しました', 'ok');
+    }
+
+    async function trainSelected(){
+      if(!selected) return;
+      const code = selected;
+      const btn = $('btnTrain');
+      btn.disabled = true;
+      setMsg('msg', '学習中: ' + code + ' ...（数十秒〜数分かかります）');
+      try{
+        const j = await apiJson('/api/train', {json:{item_code: code}});
+        setMsg('msg', '学習が完了しました: ' + code + '（' + (MODE_LABELS[j.mode] || j.mode) + '）', 'ok');
+        if(selected === code){ loadPlot(code, false); loadSupply(code); }
+      }catch(e){
+        setMsg('msg', '学習に失敗しました: ' + e.message, 'err');
+      }finally{
+        btn.disabled = false;
+      }
+    }
+
+    async function runNotify(force){
+      const target = $('pane-notify').classList.contains('active') ? 'notifyMsg' : 'msg';
+      setMsg(target, '通知チェック中...');
+      try{
+        const j = await apiJson('/api/notify_run', {json:{force: !!force}});
+        if(j.ok){
+          if(j.skipped) setMsg(target, '通知をスキップしました: ' + (j.reason || ''));
+          else setMsg(target, j.pending > 0 ? '通知を送信しました（' + j.pending + ' 件）' : '通知対象はありません', 'ok');
+        }else{
+          setMsg(target, '通知できませんでした: ' + (j.error || '不明なエラー'), 'err');
+        }
+      }catch(e){ setMsg(target, '通知に失敗しました: ' + e.message, 'err'); }
+    }
+
+    /* ================= データ入力 ================= */
+    let currentSub = 'demand';
+    let demandOffset = 0;
+    const DEMAND_LIMIT = 50;
+
+    function switchSub(name){
+      currentSub = name;
+      ['demand','inventory','bom','csv'].forEach(n => {
+        $('sub-' + n).classList.toggle('active', n === name);
+        $('subpane-' + n).classList.toggle('active', n === name);
+      });
+      if(name === 'demand') loadDemand();
+      if(name === 'inventory') loadInventory();
+      if(name === 'bom') loadBom();
+      if(name === 'csv') renderCsvHelp();
+    }
+
+    async function loadDataSummary(){
+      try{
+        const s = await apiJson('/api/data/summary');
+        const period = s.date_from ? (s.date_from + ' 〜 ' + s.date_to) : '—';
+        $('dataSummary').innerHTML =
+          '<span class="pill">需要実績 ' + fmtNum(s.demand_count, 0) + ' 件</span>' +
+          '<span class="pill">品目 ' + fmtNum(s.item_count, 0) + '</span>' +
+          '<span class="pill">期間 ' + esc(period) + '</span>' +
+          '<span class="pill cyan">在庫 ' + fmtNum(s.inventory_count, 0) + ' 件</span>' +
+          '<span class="pill cyan">部品構成 ' + fmtNum(s.bom_count, 0) + ' 件</span>';
+      }catch(e){ $('dataSummary').textContent = e.message; }
+    }
+
+    function sourceLabel(s){
+      if(!s) return '';
+      if(s === 'manual') return '手入力';
+      if(s === 'sample') return 'サンプル';
+      return s;
+    }
+
+    async function addDemand(){
+      const body = {
+        record_date: $('dDate').value,
+        item_code: $('dItem').value.trim(),
+        quantity: $('dQty').value === '' ? null : Number($('dQty').value),
+        customer: $('dCust').value.trim() || null,
+      };
+      if(!body.record_date || !body.item_code || body.quantity === null){
+        setMsg('dMsg', '日付・品目コード・数量を入力してください', 'err'); return;
+      }
+      try{
+        await apiJson('/api/data/demand', {json: body});
+        setMsg('dMsg', '追加しました: ' + body.record_date + ' ' + body.item_code + ' × ' + body.quantity, 'ok');
+        $('dQty').value = '';
+        demandOffset = 0;
+        await afterDataChange();
+      }catch(e){ setMsg('dMsg', '追加に失敗しました: ' + e.message, 'err'); }
+    }
+
+    function pageDemand(dir){
+      demandOffset = Math.max(0, demandOffset + dir * DEMAND_LIMIT);
+      loadDemand();
+    }
+
+    async function loadDemand(){
+      const q = $('dSearch').value.trim();
+      try{
+        const j = await apiJson('/api/data/demand?search=' + encodeURIComponent(q) + '&limit=' + DEMAND_LIMIT + '&offset=' + demandOffset);
+        if(demandOffset >= j.total && j.total > 0){ demandOffset = Math.max(0, Math.floor((j.total - 1) / DEMAND_LIMIT) * DEMAND_LIMIT); return loadDemand(); }
+        $('dRows').innerHTML = j.rows.length ? j.rows.map(r =>
+          '<tr><td>' + esc(r.record_date) + '</td><td>' + esc(r.item_code) + '</td>' +
+          '<td class="num">' + fmtNum(r.quantity, 3) + '</td><td>' + esc(r.customer || '') + '</td>' +
+          '<td class="muted">' + esc(sourceLabel(r.source)) + '</td>' +
+          '<td><button class="sm danger" onclick="deleteDemand(' + Number(r.id) + ')">削除</button></td></tr>'
+        ).join('') : '<tr><td colspan="6" class="empty">データがありません</td></tr>';
+        const from = j.total ? demandOffset + 1 : 0;
+        $('dPage').textContent = from + '–' + Math.min(demandOffset + DEMAND_LIMIT, j.total) + ' / ' + j.total + ' 件';
+      }catch(e){ setMsg('dMsg', e.message, 'err'); }
+    }
+
+    async function deleteDemand(id){
+      if(!confirm('この需要実績を削除しますか？')) return;
+      try{ await api('/api/data/demand/' + id, {method:'DELETE'}); await afterDataChange(); }
+      catch(e){ setMsg('dMsg', '削除に失敗しました: ' + e.message, 'err'); }
+    }
+
+    async function saveInventory(){
+      const code = $('iCode').value.trim();
+      const qty = $('iQty').value;
+      if(!code || qty === ''){ setMsg('iMsg', 'コードと在庫数を入力してください', 'err'); return; }
+      try{
+        await apiJson('/api/data/inventory', {json:{code, quantity: Number(qty)}});
+        setMsg('iMsg', '登録しました: ' + code + ' = ' + qty, 'ok');
+        $('iQty').value = '';
+        await afterDataChange();
+      }catch(e){ setMsg('iMsg', '登録に失敗しました: ' + e.message, 'err'); }
+    }
+
+    let inventoryRows = [];
+    async function loadInventory(){
+      const q = $('iSearch').value.trim();
+      try{
+        const j = await apiJson('/api/data/inventory?limit=1000&search=' + encodeURIComponent(q));
+        inventoryRows = j.rows;
+        $('iRows').innerHTML = j.rows.length ? j.rows.map((r, i) =>
+          '<tr><td>' + esc(r.code) + '</td><td class="num">' + fmtNum(r.quantity, 3) + '</td>' +
+          '<td class="muted">' + esc(sourceLabel(r.source)) + '</td><td class="muted">' + esc(r.updated_at) + '</td>' +
+          '<td class="row"><button class="sm secondary" onclick="editInventory(' + i + ')">編集</button>' +
+          '<button class="sm danger" onclick="deleteInventory(' + i + ')">削除</button></td></tr>'
+        ).join('') : '<tr><td colspan="5" class="empty">データがありません</td></tr>';
+        $('iCount').textContent = j.total > j.rows.length ? (j.rows.length + ' / ' + j.total + ' 件を表示') : (j.total + ' 件');
+      }catch(e){ setMsg('iMsg', e.message, 'err'); }
+    }
+    function editInventory(i){
+      const r = inventoryRows[i]; if(!r) return;
+      $('iCode').value = r.code; $('iQty').value = r.quantity; $('iQty').focus();
+    }
+    async function deleteInventory(i){
+      const r = inventoryRows[i]; if(!r) return;
+      if(!confirm('在庫「' + r.code + '」を削除しますか？')) return;
+      try{ await api('/api/data/inventory?code=' + encodeURIComponent(r.code), {method:'DELETE'}); await afterDataChange(); }
+      catch(e){ setMsg('iMsg', '削除に失敗しました: ' + e.message, 'err'); }
+    }
+
+    async function saveBom(){
+      const body = {
+        item_code: $('bItem').value.trim(),
+        component_code: $('bComp').value.trim(),
+        usage_per_unit: $('bUsage').value === '' ? 1 : Number($('bUsage').value),
+      };
+      if(!body.item_code || !body.component_code){ setMsg('bMsg', '品目コードと部品コードを入力してください', 'err'); return; }
+      try{
+        await apiJson('/api/data/bom', {json: body});
+        setMsg('bMsg', '登録しました: ' + body.item_code + ' ← ' + body.component_code + ' × ' + body.usage_per_unit, 'ok');
+        $('bComp').value = '';
+        await afterDataChange();
+      }catch(e){ setMsg('bMsg', '登録に失敗しました: ' + e.message, 'err'); }
+    }
+
+    async function loadBom(){
+      const q = $('bSearch').value.trim();
+      try{
+        const j = await apiJson('/api/data/bom?limit=1000&search=' + encodeURIComponent(q));
+        $('bRows').innerHTML = j.rows.length ? j.rows.map(r =>
+          '<tr><td>' + esc(r.item_code) + '</td><td>' + esc(r.component_code) + '</td>' +
+          '<td class="num">' + fmtNum(r.usage_per_unit, 3) + '</td>' +
+          '<td class="num">' + (r.component_on_hand === null ? '<span class="muted">未登録</span>' : fmtNum(r.component_on_hand, 3)) + '</td>' +
+          '<td class="muted">' + esc(sourceLabel(r.source)) + '</td>' +
+          '<td><button class="sm danger" onclick="deleteBom(' + Number(r.id) + ')">削除</button></td></tr>'
+        ).join('') : '<tr><td colspan="6" class="empty">データがありません</td></tr>';
+        $('bCount').textContent = j.total > j.rows.length ? (j.rows.length + ' / ' + j.total + ' 件を表示') : (j.total + ' 件');
+      }catch(e){ setMsg('bMsg', e.message, 'err'); }
+    }
+    async function deleteBom(id){
+      if(!confirm('この部品構成を削除しますか？')) return;
+      try{ await api('/api/data/bom/' + id, {method:'DELETE'}); await afterDataChange(); }
+      catch(e){ setMsg('bMsg', '削除に失敗しました: ' + e.message, 'err'); }
+    }
+
+    const CSV_EXAMPLES = {
+      demand: 'record_date,item_code,quantity,customer\n2025-01-15,ITEM-001,12,CUSTOMER-01',
+      inventory: 'code,quantity\nITEM-001,120\nPART-001,800',
+      bom: 'item_code,component_code,usage_per_unit\nITEM-001,PART-001,2',
+    };
+    async function ensureMeta(){
+      if(!META) META = await apiJson('/api/data/meta');
+      return META;
+    }
+    async function renderCsvHelp(){
+      const t = $('cTarget').value;
+      try{
+        const meta = await ensureMeta();
+        const fields = meta.targets[t].fields.map(f => '<code>' + esc(f.key) + '</code>（' + esc(f.label) + (f.required ? '・必須' : '') + '）').join(' ');
+        $('cHelp').innerHTML = '列: ' + fields + '<br>日本語の列名（日付・品目コード・数量・顧客・部品コード・使用数 など）も自動で認識します。例:<pre class="csvPreview" style="margin-top:4px;">' + esc(CSV_EXAMPLES[t]) + '</pre>';
+      }catch(e){ $('cHelp').textContent = e.message; }
+    }
+    function readFileText(file){
+      return new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = () => reject(fr.error);
+        fr.readAsText(file, 'utf-8');
+      });
+    }
+    async function previewCsv(){
+      const f = $('cFile').files[0];
+      const pre = $('cPreview');
+      if(!f){ pre.hidden = true; return; }
+      const text = await readFileText(f);
+      const lines = text.split(/\r?\n/).slice(0, 8).join('\n');
+      pre.textContent = '先頭行のプレビュー（' + f.name + '）\n' + lines;
+      pre.hidden = false;
+    }
+    async function importCsv(){
+      const f = $('cFile').files[0];
+      if(!f){ setMsg('cMsg', 'CSV ファイルを選択してください', 'err'); return; }
+      const target = $('cTarget').value;
+      const mode = $('cMode').value;
+      if(mode === 'replace_all' && !confirm(TARGET_LABELS[target] + 'の既存データをすべて削除してから取り込みます。よろしいですか？')) return;
+      setMsg('cMsg', '取込中...');
+      try{
+        const text = await readFileText(f);
+        const j = await apiJson('/api/data/import_csv', {json:{target, csv_text: text, mode, source_name: f.name}});
+        setMsg('cMsg', TARGET_LABELS[target] + 'に ' + j.imported + ' 件登録しました（除外 ' + j.skipped + ' 行 / 置換で削除 ' + j.deleted + ' 件）', 'ok');
+        await afterDataChange();
+      }catch(e){ setMsg('cMsg', '取込に失敗しました: ' + e.message, 'err'); }
+    }
+    async function clearData(){
+      const target = $('clearTarget').value;
+      const label = TARGET_LABELS[target];
+      if(!confirm(label + 'をすべて削除します。この操作は元に戻せません。よろしいですか？')) return;
+      try{
+        const j = await apiJson('/api/data/clear', {json:{target, confirm: true}});
+        setMsg('cMsg', label + 'を ' + j.deleted + ' 件削除しました', 'ok');
+        await afterDataChange();
+      }catch(e){ setMsg('cMsg', '削除に失敗しました: ' + e.message, 'err'); }
+    }
+
+    /* ================= MySQL連携 ================= */
+    let mysqlColumns = [];
+    const FIELD_ALIASES = {
+      record_date: ['record_date','date','order_date','sales_date','ship_date','shipped_at','created_at','日付','受注日','出荷日','売上日','計上日'],
+      item_code: ['item_code','item','product_code','product','sku','model','品目コード','品目','品番','製品コード','商品コード','型式'],
+      quantity: ['quantity','qty','amount','count','数量','在庫数','個数'],
+      customer: ['customer','customer_id','customer_code','client','顧客','顧客コード','得意先','得意先コード'],
+      code: ['code','item_code','component_code','part_code','sku','item_id','コード','品目コード','部品コード','品番'],
+      component_code: ['component_code','component','part_code','part','child_code','部品コード','部品','子品目'],
+      usage_per_unit: ['usage_per_unit','usage','qty_per_unit','quantity_per','員数','使用数'],
+    };
+
+    async function loadMysqlConfig(){
+      try{
+        const j = await apiJson('/api/mysql/config');
+        $('mHost').value = j.host || '';
+        $('mPort').value = j.port || 3306;
+        $('mDb').value = j.database || '';
+        $('mUser').value = j.user || '';
+        $('mDriver').value = j.driver || 'mysqlconnector';
+        $('mPass').value = '';
+        $('mPass').placeholder = j.password_set ? '設定済み（変更する場合のみ入力）' : '';
+        $('mPassStatus').textContent = j.password_set ? 'パスワードは保存済みです' : 'パスワード未設定';
+      }catch(e){ setMsg('mMsg', e.message, 'err'); }
+      ensureMeta().then(() => { if(!$('mapGrid').children.length) renderMapping(false); }).catch(()=>{});
+    }
+
+    async function putMysqlConfig(){
+      const body = {
+        host: $('mHost').value.trim(), port: Number($('mPort').value || 3306),
+        database: $('mDb').value.trim(), user: $('mUser').value.trim(),
+        driver: $('mDriver').value, password: $('mPass').value || null,
+      };
+      await apiJson('/api/mysql/config', {json: body});
+      await loadMysqlConfig();
+    }
+
+    async function saveMysqlConfig(){
+      try{
+        await putMysqlConfig();
+        setMsg('mMsg', '接続設定を保存しました', 'ok');
+      }catch(e){ setMsg('mMsg', '保存に失敗しました: ' + e.message, 'err'); }
+    }
+
+    async function testMysql(){
+      setMsg('mMsg', '接続テスト中...');
+      try{
+        await putMysqlConfig();
+        const j = await apiJson('/api/mysql/test', {json:{}});
+        setMsg('mMsg', '接続できました' + (j.server_version ? '（MySQL ' + j.server_version + '）' : '') + ' / テーブル・ビュー ' + j.tables + ' 件', 'ok');
+        await loadTables();
+      }catch(e){ setMsg('mMsg', '接続できませんでした: ' + e.message, 'err'); }
+    }
+
+    async function loadTables(keep){
+      try{
+        const j = await apiJson('/api/mysql/tables');
+        const sel = $('mTable');
+        const cur = keep || sel.value;
+        sel.innerHTML = '<option value="">（テーブルを選択）</option>' + j.tables.map(t =>
+          '<option value="' + esc(t.name) + '">' + esc(t.name) + (t.kind === 'view' ? '（ビュー）' : '') + '</option>').join('');
+        if(cur && j.tables.some(t => t.name === cur)){ sel.value = cur; }
+      }catch(e){ setMsg('impMsg', 'テーブル一覧を取得できませんでした: ' + e.message, 'err'); }
+    }
+
+    function renderTable(tableEl, columns, rows){
+      tableEl.innerHTML = '<thead><tr>' + columns.map(c => '<th>' + esc(c) + '</th>').join('') + '</tr></thead><tbody>' +
+        (rows.length ? rows.map(r => '<tr>' + r.map(v => '<td>' + (v === null ? '<span class="muted">NULL</span>' : esc(v)) + '</td>').join('') + '</tr>').join('')
+                     : '<tr><td colspan="' + columns.length + '" class="empty">該当する行がありません</td></tr>') + '</tbody>';
+    }
+
+    async function onTableChange(presetMapping, presetFilters){
+      const table = $('mTable').value;
+      mysqlColumns = [];
+      $('rawWrap').hidden = true;
+      $('prevWrap').hidden = true;
+      if(!table){ renderMapping(false); $('filterRows').innerHTML = ''; return; }
+      try{
+        const j = await apiJson('/api/mysql/columns?table=' + encodeURIComponent(table));
+        mysqlColumns = j.columns;
+        renderMapping(!presetMapping, presetMapping);
+        $('filterRows').innerHTML = '';
+        (presetFilters || []).forEach(f => addFilterRow(f));
+        const p = await apiJson('/api/mysql/preview', {json:{table, limit: 20}});
+        renderTable($('rawTable'), p.columns, p.rows);
+        $('rawWrap').hidden = false;
+        setMsg('impMsg', 'テーブル「' + table + '」: ' + p.total.toLocaleString() + ' 行 / ' + mysqlColumns.length + ' 列');
+      }catch(e){ setMsg('impMsg', e.message, 'err'); }
+    }
+
+    function guessColumn(field){
+      const names = mysqlColumns.map(c => c.name);
+      const lower = names.map(n => n.toLowerCase());
+      const aliases = FIELD_ALIASES[field] || [field];
+      for(const a of aliases){ const i = lower.indexOf(a.toLowerCase()); if(i >= 0) return names[i]; }
+      for(const a of aliases){ if(a.length < 3) continue; const i = lower.findIndex(n => n.includes(a.toLowerCase())); if(i >= 0) return names[i]; }
+      return '';
+    }
+
+    function renderMapping(autoGuess, preset){
+      if(!META){ ensureMeta().then(() => renderMapping(autoGuess, preset)); return; }
+      const target = $('mTarget').value;
+      const fields = META.targets[target].fields;
+      const opts = (sel) => '<option value="">' + (mysqlColumns.length ? '（使わない）' : '（テーブル未選択）') + '</option>' +
+        mysqlColumns.map(c => '<option value="' + esc(c.name) + '"' + (c.name === sel ? ' selected' : '') + '>' + esc(c.name) + '  [' + esc(c.type) + ']</option>').join('');
+      $('mapGrid').innerHTML = fields.map(f => {
+        const sel = preset ? (preset[f.key] || '') : (autoGuess ? guessColumn(f.key) : '');
+        return '<div>' + esc(f.label) + (f.required ? ' <span class="req">*</span>' : '') + ' <span class="muted small">' + esc(f.key) + '</span></div>' +
+               '<select data-field="' + esc(f.key) + '">' + opts(sel) + '</select>';
+      }).join('');
+    }
+
+    function currentMapping(){
+      const m = {};
+      $('mapGrid').querySelectorAll('select[data-field]').forEach(s => { if(s.value) m[s.dataset.field] = s.value; });
+      return m;
+    }
+
+    function addFilterRow(preset){
+      if(!META){ ensureMeta().then(() => addFilterRow(preset)); return; }
+      const div = document.createElement('div');
+      div.className = 'row filterRow';
+      const colOpts = mysqlColumns.map(c => '<option value="' + esc(c.name) + '">' + esc(c.name) + '</option>').join('');
+      const opOpts = META.filter_ops.map(o => '<option value="' + esc(o) + '">' + esc(o) + '</option>').join('');
+      div.innerHTML = '<select class="fCol">' + colOpts + '</select><select class="fOp">' + opOpts + '</select>' +
+        '<input class="fVal grow" placeholder="値（例: 2023-01-01 / A%）" /><button class="sm danger" type="button">×</button>';
+      div.querySelector('button').onclick = () => div.remove();
+      const opSel = div.querySelector('.fOp');
+      const valInp = div.querySelector('.fVal');
+      opSel.onchange = () => { valInp.disabled = opSel.value.startsWith('IS '); };
+      if(preset){
+        div.querySelector('.fCol').value = preset.column;
+        opSel.value = preset.op;
+        valInp.value = Array.isArray(preset.value) ? preset.value.join(',') : (preset.value ?? '');
+        opSel.onchange();
+      }
+      $('filterRows').appendChild(div);
+    }
+
+    function currentFilters(){
+      return Array.from(document.querySelectorAll('#filterRows .filterRow')).map(r => ({
+        column: r.querySelector('.fCol').value,
+        op: r.querySelector('.fOp').value,
+        value: r.querySelector('.fOp').value.startsWith('IS ') ? null : r.querySelector('.fVal').value,
+      })).filter(f => f.column);
+    }
+
+    async function previewMapped(){
+      const table = $('mTable').value;
+      if(!table){ setMsg('impMsg', 'テーブルを選択してください', 'err'); return; }
+      setMsg('impMsg', 'プレビュー取得中...');
+      try{
+        const j = await apiJson('/api/mysql/preview', {json:{table, target: $('mTarget').value, mapping: currentMapping(), filters: currentFilters(), limit: 20}});
+        renderTable($('prevTable'), j.columns, j.rows);
+        $('prevInfo').textContent = '条件に一致する行: ' + j.total.toLocaleString() + ' 行（先頭 ' + j.rows.length + ' 行を表示。取込時に日付・数量が不正な行は除外されます）';
+        $('prevWrap').hidden = false;
+        setMsg('impMsg', '');
+      }catch(e){ setMsg('impMsg', 'プレビューできません: ' + e.message, 'err'); }
+    }
+
+    async function runImport(){
+      const table = $('mTable').value;
+      if(!table){ setMsg('impMsg', 'テーブルを選択してください', 'err'); return; }
+      const target = $('mTarget').value;
+      const mode = $('mMode').value;
+      if(mode === 'replace_all' && !confirm(TARGET_LABELS[target] + 'の既存データをすべて削除してから取り込みます。よろしいですか？')) return;
+      setMsg('impMsg', '取込中...');
+      try{
+        const j = await apiJson('/api/mysql/import', {json:{
+          table, target, mapping: currentMapping(), filters: currentFilters(), mode,
+          save_as: $('mJobName').value.trim() || null,
+        }});
+        setMsg('impMsg', TARGET_LABELS[target] + 'に ' + j.imported + ' 件登録しました（取得 ' + j.fetched + ' 行 / 除外 ' + j.skipped + ' 行 / 置換で削除 ' + j.deleted + ' 件）' + (j.job_id ? '\n取込定義を保存しました' : ''), 'ok');
+        loadJobs();
+        await afterDataChange();
+      }catch(e){ setMsg('impMsg', '取込に失敗しました: ' + e.message, 'err'); }
+    }
+
+    let jobs = [];
+    async function loadJobs(){
+      try{
+        const j = await apiJson('/api/mysql/jobs');
+        jobs = j.jobs;
+        const list = $('jobList');
+        if(!jobs.length){ list.innerHTML = '<div class="empty">保存済みの取込定義はありません。右側で「取込定義として保存する名前」を入力して取り込むと保存されます。</div>'; return; }
+        list.innerHTML = jobs.map((job, i) =>
+          '<div class="item" style="cursor:default;flex-wrap:wrap;">' +
+          '<span class="itemLabel"><b>' + esc(job.name) + '</b><br><span class="muted small">' + esc(job.table_name) + ' → ' + esc(TARGET_LABELS[job.target] || job.target) +
+          ' / 最終実行 ' + esc(job.last_run_at || '未実行') + (job.last_count !== null && job.last_count !== undefined ? '（' + job.last_count + ' 件）' : '') + '</span></span>' +
+          '<button class="sm" onclick="runJob(' + i + ')">実行</button>' +
+          '<button class="sm secondary" onclick="editJob(' + i + ')">編集</button>' +
+          '<button class="sm danger" onclick="deleteJob(' + i + ')">削除</button></div>'
+        ).join('');
+      }catch(e){ setMsg('jobMsg', e.message, 'err'); }
+    }
+    async function runJob(i){
+      const job = jobs[i]; if(!job) return;
+      setMsg('jobMsg', '「' + job.name + '」を実行中...');
+      try{
+        const j = await apiJson('/api/mysql/jobs/' + job.id + '/run', {json:{}});
+        setMsg('jobMsg', '「' + job.name + '」: ' + j.imported + ' 件登録しました（除外 ' + j.skipped + ' 行）', 'ok');
+        loadJobs();
+        await afterDataChange();
+      }catch(e){ setMsg('jobMsg', '「' + job.name + '」の実行に失敗しました: ' + e.message, 'err'); }
+    }
+    async function editJob(i){
+      const job = jobs[i]; if(!job) return;
+      await ensureMeta();
+      await loadTables(job.table_name);
+      $('mTarget').value = job.target;
+      $('mMode').value = job.mode;
+      $('mJobName').value = job.name;
+      if($('mTable').value !== job.table_name){ setMsg('impMsg', 'テーブル「' + job.table_name + '」が見つかりません。接続設定を確認してください。', 'err'); return; }
+      await onTableChange(job.mapping, job.filters);
+      setMsg('impMsg', '取込定義「' + job.name + '」を読み込みました。変更して「取込」を押すと上書き保存されます。');
+    }
+    async function deleteJob(i){
+      const job = jobs[i]; if(!job) return;
+      if(!confirm('取込定義「' + job.name + '」を削除しますか？（取り込み済みのデータは残ります）')) return;
+      try{ await api('/api/mysql/jobs/' + job.id, {method:'DELETE'}); loadJobs(); }
+      catch(e){ setMsg('jobMsg', e.message, 'err'); }
+    }
+    async function syncAll(){
+      setMsg('jobMsg', '同期中...');
+      try{
+        const j = await apiJson('/api/mysql/sync_all', {json:{}});
+        const lines = j.results.map(r => '✓ ' + r.job + ': ' + r.imported + ' 件').concat(j.errors.map(e => '✗ ' + e.job + ': ' + e.error));
+        setMsg('jobMsg', lines.length ? lines.join('\n') : '取込定義がありません', j.ok ? 'ok' : 'err');
+        loadJobs();
+        await afterDataChange();
+      }catch(e){ setMsg('jobMsg', '同期に失敗しました: ' + e.message, 'err'); }
+    }
+
+    /* ================= 学習管理 ================= */
+    async function loadTrainList(){
+      const q = $('tq').value || '';
+      const j = await apiJson('/api/items?search=' + encodeURIComponent(q));
+      const list = $('trainList');
+      list.innerHTML = '';
+      j.items.forEach(code => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = '<span class="itemLabel">' + esc(code) + '</span>';
+        const btn = document.createElement('button');
+        btn.className = 'sm secondary';
+        btn.textContent = '学習';
+        btn.onclick = () => trainOne(btn, code);
+        div.appendChild(btn);
+        list.appendChild(div);
+      });
+      if(!j.items.length) list.innerHTML = '<div class="empty">品目がありません</div>';
+    }
+
+    async function trainOne(btn, code){
+      btn.disabled = true;
+      btn.textContent = '学習中';
+      try{
+        await apiJson('/api/train', {json:{item_code: code}});
+        btn.textContent = '完了';
+        btn.className = 'sm';
+      }catch(e){
+        btn.textContent = '失敗';
+        btn.className = 'sm danger';
+        btn.title = e.message;
+        setMsg('trainMsg', code + ': ' + e.message, 'err');
+      }finally{
+        btn.disabled = false;
+      }
+    }
+
+    async function startTrainAll(){
+      const btn = $('btnTrainAll');
+      btn.disabled = true;
+      setMsg('trainMsg', '');
+      try{
+        const j = await apiJson('/api/train_all', {method:'POST'});
+        if(j.ok && j.started){ startTrainPolling(); refreshTrainStatus(); }
+        else { setMsg('trainMsg', '開始できませんでした: ' + (j.reason === 'already_running' ? '実行中です' : (j.reason || '不明')), 'err'); btn.disabled = false; }
+      }catch(e){ setMsg('trainMsg', 'エラー: ' + e.message, 'err'); btn.disabled = false; }
+    }
+    function startTrainPolling(){
+      if(trainPolling) clearInterval(trainPolling);
+      trainPolling = setInterval(refreshTrainStatus, 2000);
+    }
+    async function refreshTrainStatus(){
+      try{ applyTrainStatus(await apiJson('/api/train_status')); }catch(e){}
+    }
+    function applyTrainStatus(j){
+      const dot = $('trainDot'), label = $('trainStatusLabel'), outer = $('progOuter'), inner = $('progInner');
+      const progText = $('progText'), btn = $('btnTrainAll');
+      if(j.running){
+        if(!trainPolling) startTrainPolling();
+        dot.className = 'statusDot running';
+        label.textContent = '学習中...';
+        outer.hidden = false;
+        const pct = j.total > 0 ? Math.round(j.done / j.total * 100) : 0;
+        inner.style.width = pct + '%';
+        inner.className = 'progInner';
+        progText.textContent = pct + '%（' + j.done + ' / ' + j.total + ' 件）' + (j.current ? ' 現在: ' + j.current : '');
+        btn.disabled = true;
+      }else{
+        if(trainPolling){ clearInterval(trainPolling); trainPolling = null; }
+        btn.disabled = false;
+        if(j.finished_at){
+          dot.className = 'statusDot done';
+          label.textContent = '完了 — ' + j.total + ' 件学習 / 失敗 ' + (j.failed || []).length + ' 件';
+          outer.hidden = false;
+          inner.style.width = '100%';
+          inner.className = 'progInner done';
+          progText.textContent = '完了: ' + j.finished_at;
+        }else{
+          dot.className = 'statusDot';
+          label.textContent = '待機中';
+          outer.hidden = true;
+          progText.textContent = '';
+        }
+      }
+      const fails = j.failed || [];
+      $('failArea').hidden = !fails.length;
+      $('failList').innerHTML = fails.map(f => '<div>' + esc(f.item_code) + ': ' + esc(f.error) + '</div>').join('');
+      $('lastRetrainAt').textContent = j.last_retrain_at || '（未実行）';
+      $('nextRetrainAt').textContent = j.next_retrain_at || '（一括学習の実行後に設定）';
+      const badge = $('autoRetrainBadge');
+      if(j.auto_retrain_monthly){
+        badge.textContent = '有効'; badge.className = 'pill cyan';
+        $('autoRetrainNote').textContent = '一括学習を一度実行すると、以後 30 日ごとに（保存済みの MySQL 取込定義を同期してから）自動で再学習します。';
+      }else{
+        badge.textContent = '無効'; badge.className = 'pill';
+        $('autoRetrainNote').textContent = '自動再学習は無効です（settings.json の auto_retrain_monthly で変更できます）。';
+      }
+    }
+
+    /* ================= 品目設定 ================= */
+    let allItems = [], excludedSet = new Set(), weeklySet = new Set();
+
+    async function loadManageData(){
+      const [a, e, w] = await Promise.all([
+        apiJson('/api/items?include_excluded=true'), apiJson('/api/excluded'), apiJson('/api/weekly'),
+      ]);
+      excludedSet = new Set(e.excluded || []);
+      weeklySet = new Set(w.weekly || []);
+      allItems = Array.from(new Set([...(a.items || []), ...excludedSet])).sort();
+      $('excludedCount').textContent = excludedSet.size + '件';
+      $('weeklyCount').textContent = weeklySet.size + '件';
+      renderManageList();
+      renderWeeklyList();
+    }
+
+    function makeToggleRow(code, badgeHtml, btnText, btnClass, onClick, dim){
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.style.cursor = 'default';
+      if(dim) div.style.opacity = '0.55';
+      div.innerHTML = badgeHtml + '<span class="itemLabel" title="' + esc(code) + '">' + esc(code) + '</span>';
+      const btn = document.createElement('button');
+      btn.className = 'sm ' + btnClass;
+      btn.textContent = btnText;
+      btn.onclick = () => onClick(btn);
+      div.appendChild(btn);
+      return div;
+    }
+
+    function renderManageList(){
+      const q = ($('excludeSearch').value || '').toLowerCase();
+      const list = $('manageList');
+      list.innerHTML = '';
+      const items = allItems.filter(c => !q || c.toLowerCase().includes(q));
+      items.forEach(code => {
+        const isExc = excludedSet.has(code);
+        list.appendChild(makeToggleRow(code, '', isExc ? '除外を解除' : '除外', isExc ? 'secondary' : 'danger',
+          btn => toggleExclude(btn, code), isExc));
+      });
+      if(!items.length) list.innerHTML = '<div class="empty">該当なし</div>';
+    }
+
+    async function toggleExclude(btn, code){
+      btn.disabled = true;
+      const now = excludedSet.has(code);
+      try{
+        await apiJson('/api/excluded', {json:{item_code: code, excluded: !now}});
+        now ? excludedSet.delete(code) : excludedSet.add(code);
+        $('excludedCount').textContent = excludedSet.size + '件';
+        renderManageList();
+        renderWeeklyList();
+        loadItems().catch(()=>{});
+      }catch(e){ alert('失敗しました: ' + e.message); btn.disabled = false; }
+    }
+
+    function renderWeeklyList(){
+      const q = ($('weeklySearch').value || '').toLowerCase();
+      const list = $('weeklyList');
+      list.innerHTML = '';
+      const items = allItems.filter(c => !excludedSet.has(c) && (!q || c.toLowerCase().includes(q)));
+      items.forEach(code => {
+        const isWeekly = weeklySet.has(code);
+        const badge = isWeekly ? '<span class="pill cyan">週次</span>' : '<span class="pill">月次</span>';
+        list.appendChild(makeToggleRow(code, badge, isWeekly ? '月次に変更' : '週次に変更', 'secondary',
+          btn => toggleWeekly(btn, code), false));
+      });
+      if(!items.length) list.innerHTML = '<div class="empty">該当なし</div>';
+    }
+
+    async function toggleWeekly(btn, code){
+      btn.disabled = true;
+      const now = weeklySet.has(code);
+      try{
+        await apiJson('/api/weekly', {json:{item_code: code, weekly: !now}});
+        now ? weeklySet.delete(code) : weeklySet.add(code);
+        $('weeklyCount').textContent = weeklySet.size + '件';
+        renderWeeklyList();
+      }catch(e){ alert('失敗しました: ' + e.message); btn.disabled = false; }
+    }
+
+    /* ================= 通知設定 ================= */
+    function loadNotifyTab(){
+      loadNotifySettings();
+      loadEmails();
+      loadSmtpConfig();
+    }
+    async function loadNotifySettings(){
+      try{
+        const j = await apiJson('/api/notify_settings');
+        $('notifyEnabled').checked = !!j.enabled;
+      }catch(e){ setMsg('notifyMsg', '通知設定を取得できません: ' + e.message, 'err'); }
+    }
+    async function saveNotifySettings(){
+      const enabled = $('notifyEnabled').checked;
+      try{
+        await apiJson('/api/notify_settings', {json:{enabled}});
+        setMsg('notifyMsg', '自動通知を' + (enabled ? '有効' : '無効') + 'にしました', 'ok');
+      }catch(e){ setMsg('notifyMsg', '保存に失敗しました: ' + e.message, 'err'); }
+    }
+    async function loadEmails(){
+      try{
+        const j = await apiJson('/api/emails');
+        const list = $('emailList');
+        list.innerHTML = '';
+        (j.emails || []).forEach(em => {
+          const div = document.createElement('div');
+          div.className = 'item';
+          div.style.cursor = 'default';
+          div.innerHTML = '<span class="itemLabel">' + esc(em) + '</span>';
+          const btn = document.createElement('button');
+          btn.className = 'sm danger';
+          btn.textContent = '削除';
+          btn.onclick = () => removeEmail(btn, em);
+          div.appendChild(btn);
+          list.appendChild(div);
+        });
+        if(!(j.emails || []).length) list.innerHTML = '<div class="empty">送信先が登録されていません</div>';
+      }catch(e){ setMsg('emailMsg', '取得に失敗しました: ' + e.message, 'err'); }
+    }
+    async function addEmail(){
+      const email = $('newEmail').value.trim();
+      if(!email){ setMsg('emailMsg', 'メールアドレスを入力してください', 'err'); return; }
+      try{
+        await apiJson('/api/emails', {json:{email}});
+        $('newEmail').value = '';
+        await loadEmails();
+        setMsg('emailMsg', '追加しました: ' + email, 'ok');
+      }catch(e){ setMsg('emailMsg', '追加に失敗しました: ' + e.message, 'err'); }
+    }
+    async function removeEmail(btn, email){
+      btn.disabled = true;
+      try{
+        await apiJson('/api/emails', {method:'DELETE', json:{email}});
+        await loadEmails();
+        setMsg('emailMsg', '削除しました: ' + email, 'ok');
+      }catch(e){ setMsg('emailMsg', '削除に失敗しました: ' + e.message, 'err'); btn.disabled = false; }
+    }
+    async function loadSmtpConfig(){
+      try{
+        const j = await apiJson('/api/smtp_config');
+        $('smtpServer').value = j.smtp_server || 'smtp.gmail.com';
+        $('smtpPort').value = j.smtp_port || 587;
+        $('smtpUser').value = j.username || '';
+        $('smtpFrom').value = j.from_addr || '';
+        $('smtpPass').value = '';
+        $('smtpPass').placeholder = j.password_set ? '設定済み（変更する場合のみ入力）' : '';
+        $('smtpPassStatus').textContent = j.password_set ? 'パスワードは保存済みです' : 'パスワード未設定';
+      }catch(e){ setMsg('smtpMsg', 'SMTP 設定を取得できません: ' + e.message, 'err'); }
+    }
+    async function saveSmtpConfig(){
+      const body = {
+        smtp_server: $('smtpServer').value.trim(),
+        smtp_port: parseInt($('smtpPort').value || '587', 10),
+        username: $('smtpUser').value.trim(),
+        from_addr: $('smtpFrom').value.trim(),
+        password: $('smtpPass').value || null,
+      };
+      try{
+        await apiJson('/api/smtp_config', {json: body});
+        setMsg('smtpMsg', '保存しました', 'ok');
+        await loadSmtpConfig();
+      }catch(e){ setMsg('smtpMsg', '保存に失敗しました: ' + e.message, 'err'); }
+    }
+    async function testSmtp(){
+      setMsg('smtpMsg', 'テスト送信中...');
+      try{
+        const j = await apiJson('/api/smtp_test', {json:{}});
+        setMsg('smtpMsg', 'テストメールを送信しました: ' + (j.to || []).join(', '), 'ok');
+      }catch(e){ setMsg('smtpMsg', '送信に失敗しました: ' + e.message, 'err'); }
+    }
+
+    /* ================= 初期化 ================= */
+    // URL の #タブ名 または #item=品目コード で画面を直接開く
+    function applyHash(){
+      const h = decodeURIComponent(location.hash.slice(1));
+      if(h.startsWith('item=')){
+        switchTab('predict');
+        if(h.length > 5) selectItem(h.slice(5));
+      }else if(h && $('tab-' + h)){
+        switchTab(h);
+      }
+    }
+
+    (function init(){
+      const today = new Date();
+      $('dDate').value = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+      applyHash();
+      loadItems().catch(e => setMsg('msg', '初期ロードに失敗しました: ' + e.message, 'err'));
+      loadItemDatalist();
+      refreshTrainStatus();
+    })();
+  </script>
+</body>
+</html>
