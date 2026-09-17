@@ -50,6 +50,9 @@ def test_full_flow():
     assert tr["mode"] == "monthly"
     r = client.get("/api/forecast_plot?item_code=SAMPLE-A")
     assert r.status_code == 200 and r.headers["content-type"] == "image/png"
+    light = client.get("/api/forecast_plot?item_code=SAMPLE-A&theme=light")
+    assert light.status_code == 200 and light.content != r.content
+    assert client.get("/api/forecast_plot?item_code=SAMPLE-A&theme=blue").status_code == 422
     sa = _ok(client.get("/api/supply?item_code=SAMPLE-A"))
     assert sa["has_model"] is True
     assert sa["forecast_6mo"] > sa["forecast_1mo"] > 0

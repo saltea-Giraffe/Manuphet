@@ -36,6 +36,13 @@ def test_train_and_forecast_monthly(demand, tmp_path):
     assert res["test_size"] == 12 and np.isfinite(res["smape"])
     fig = mh.backtest_figure(demand, "SAMPLE-A", "monthly", horizon=6)
     assert len(fig.axes[0].lines) == 3
+    assert fig.get_facecolor()[:3] != (1.0, 1.0, 1.0)
+
+    light = mh.backtest_figure(demand, "SAMPLE-A", "monthly", horizon=6, theme="light")
+    assert light.get_facecolor()[:3] == (1.0, 1.0, 1.0)
+    assert light.axes[0].get_facecolor()[:3] == (1.0, 1.0, 1.0)
+    with pytest.raises(ValueError):
+        mh.backtest_figure(demand, "SAMPLE-A", "monthly", theme="blue")
 
 
 def test_train_weekly(demand, tmp_path):

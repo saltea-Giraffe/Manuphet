@@ -608,56 +608,69 @@ class ModelHandler:
             model_payload=payload,
         )
 
-    # 需要予測グラフの配色
-    _CP_BG      = "#06060E"
-    _CP_CARD    = "#0C0C1A"
-    _CP_YELLOW  = "#FCE300"
-    _CP_CYAN    = "#00E5FF"
-    _CP_GRID    = "#1A1A2E"
-    _CP_TEXT    = "#8090A0"
+    # 需要予測グラフの配色（Web 画面のダーク / ライトモードと揃える）
+    PLOT_THEMES: Dict[str, Dict[str, str]] = {
+        "dark": {
+            "bg": "#06060E", "axes": "#0C0C1A", "grid": "#1A1A2E", "text": "#8090A0",
+            "actual": "#FCE300", "backtest": "#00E5FF", "forecast": "#FF6BD6",
+        },
+        "light": {
+            "bg": "#FFFFFF", "axes": "#FFFFFF", "grid": "#E3E6EE", "text": "#4A5060",
+            "actual": "#8A6D00", "backtest": "#006E8A", "forecast": "#A0307F",
+        },
+    }
 
-    def _apply_dark_axes(self, ax):
-        ax.set_facecolor(self._CP_CARD)
-        ax.tick_params(colors=self._CP_TEXT, labelsize=8)
+    def _apply_axes_theme(self, ax, pal: Dict[str, str]):
+        ax.set_facecolor(pal["axes"])
+        ax.tick_params(colors=pal["text"], labelsize=8)
         for spine in ax.spines.values():
-            spine.set_edgecolor(self._CP_GRID)
-        ax.xaxis.label.set_color(self._CP_TEXT)
-        ax.yaxis.label.set_color(self._CP_TEXT)
-        ax.grid(True, color=self._CP_GRID, linewidth=0.5, alpha=0.8, zorder=0)
+            spine.set_edgecolor(pal["grid"])
+        ax.xaxis.label.set_color(pal["text"])
+        ax.yaxis.label.set_color(pal["text"])
+        ax.grid(True, color=pal["grid"], linewidth=0.5, alpha=0.8, zorder=0)
 
     def _plot_backtest_result(self, result: Dict[str, Any], title_prefix: str,
-                              forecast: Optional[Tuple[List[Any], List[float]]] = None) -> Figure:
+                              forecast: Optional[Tuple[List[Any], List[float]]] = None,
+                              theme: str = "dark") -> Figure:
+        pal = self.PLOT_THEMES.get(theme)
+        if pal is None:
+            raise ValueError(f"不明なテーマです: {theme}")
         fig = Figure(figsize=(6, 4), dpi=100)
-        fig.patch.set_facecolor(self._CP_BG)
+        fig.patch.set_facecolor(pal["bg"])
         ax = fig.add_subplot(111)
-        self._apply_dark_axes(ax)
+        self._apply_axes_theme(ax, pal)
         ax.plot(result["dates"], result["actual"],
-                label="ACTUAL", color=self._CP_YELLOW, linewidth=2, zorder=3)
+                label="ACTUAL", color=pal["actual"], linewidth=2, zorder=3)
         ax.plot(result["dates"], result["pred"],
-                label="BACKTEST", color=self._CP_CYAN, linewidth=2, linestyle="--", zorder=3)
+                label="BACKTEST", color=pal["backtest"], linewidth=2, linestyle="--", zorder=3)
         ax.fill_between(result["dates"], result["actual"],
-                        alpha=0.07, color=self._CP_YELLOW, zorder=2)
-        colors = [self._CP_YELLOW, self._CP_CYAN]
+                        alpha=0.07, color=pal["actual"], zorder=2)
+        colors = [pal["actual"], pal["backtest"]]
         if forecast and forecast[0]:
             f_dates = [result["dates"][-1]] + list(forecast[0])
             f_vals = [result["actual"][-1]] + list(forecast[1])
-            ax.plot(f_dates, f_vals, label="FORECAST", color="#FF6BD6",
+            ax.plot(f_dates, f_vals, label="FORECAST", color=pal["forecast"],
                     linewidth=2, linestyle=":", marker="o", markersize=3, zorder=3)
-            colors.append("#FF6BD6")
+            colors.append(pal["forecast"])
         ax.set_title(
             f"{title_prefix}  RMSE={result['rmse']:.2f}  "
             f"MAE={result['mae']:.2f}  sMAPE={result['smape']:.1f}%",
-            color=self._CP_YELLOW, fontsize=10, fontweight="bold", pad=10,
+            color=pal["actual"], fontsize=10, fontweight="bold", pad=10,
         )
-        leg = ax.legend(facecolor=self._CP_BG, edgecolor=self._CP_YELLOW,
+        leg = ax.legend(facecolor=pal["bg"], edgecolor=pal["actual"],
                         fontsize=9, labelcolor=colors)
         leg.get_frame().set_alpha(0.9)
         fig.autofmt_xdate()
         return fig
 
     def backtest_figure(self, demand_data: pd.DataFrame, item_code: str, mode: str,
-                        horizon: int = 0) -> Figure:
-        """ウォークフォワード評価（直近12期間）と、指定があれば将来予測を描画する。"""
+                        horizon: int = 0, theme: str = "dark") -> Figure:
+        """ウォークフォワード評価（直近12期間）と、指定があれば将来予測を描画する。
+
+        theme は "dark"（黒背景）または "light"（白背景）。
+        """
+        if theme not in self.PLOT_THEMES:
+            raise ValueError(f"不明なテーマです: {theme}")
         model_payload = self._load_model(item_code, model_type=mode)
         if model_payload is None:
             raise ValueError(f"{item_code} の{'週次' if mode == 'weekly' else '月次'}モデルがありません。先に学習してください")
@@ -672,7 +685,7 @@ class ModelHandler:
         if horizon > 0:
             forecast = self.forecast_periods(demand_data, item_code, mode, horizon)
         title = "Weekly Backtest (WF)" if mode == "weekly" else "Monthly Backtest (WF)"
-        return self._plot_backtest_result(result, title, forecast=forecast)
+        return self._plot_backtest_result(result, title, forecast=forecast, theme=theme)
 
     # ======================================================
     # Iterative Forecast

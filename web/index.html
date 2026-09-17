@@ -271,7 +271,7 @@
             <button id="btnPredict" onclick="predictOne()" disabled>更新</button>
           </div>
         </div>
-        <div class="muted small" style="margin:6px 0;">実績（黄）・直近期間のバックテスト（水色）・今後の予測（桃色）を表示します。</div>
+        <div class="muted small" style="margin:6px 0;">実績（実線）・直近期間のバックテスト（破線）・今後の予測（点線）を表示します。</div>
         <div class="plotFrame"><img id="plot" alt="" /></div>
         <div id="msg" class="msg"></div>
       </section>
@@ -704,7 +704,12 @@
       $('themeToggle').innerHTML = theme === 'light' ? '&#9728;' : '&#9789;';
       try{ localStorage.setItem('manuphet_theme', theme); }catch(e){}
     }
-    function toggleTheme(){ applyTheme(document.body.classList.contains('light') ? 'dark' : 'light'); }
+    function currentTheme(){ return document.body.classList.contains('light') ? 'light' : 'dark'; }
+    function toggleTheme(){
+      applyTheme(currentTheme() === 'light' ? 'dark' : 'light');
+      // グラフは画像なので、モードに合わせた配色で描き直す
+      if(selected) loadPlot(selected, false);
+    }
     (function(){
       let saved = null;
       try{ saved = localStorage.getItem('manuphet_theme'); }catch(e){}
@@ -799,7 +804,7 @@
       img.removeAttribute('src');
       if(announce) setMsg('msg', 'グラフを作成中...');
       try{
-        const r = await api('/api/forecast_plot?item_code=' + encodeURIComponent(code) + '&_=' + Date.now());
+        const r = await api('/api/forecast_plot?item_code=' + encodeURIComponent(code) + '&theme=' + currentTheme() + '&_=' + Date.now());
         const blob = await r.blob();
         if(token !== plotReqToken || selected !== code) return;
         const url = URL.createObjectURL(blob);

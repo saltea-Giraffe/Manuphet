@@ -428,11 +428,12 @@ class ManuphetService:
             info = self.model_handler.train_product_model_monthly(demand, item_code)
         return {"item_code": item_code, "mode": mode, "estimator": info.get("estimator")}
 
-    def backtest_png(self, item_code: str) -> io.BytesIO:
-        """バックテスト＋将来予測のグラフを PNG で返す。"""
+    def backtest_png(self, item_code: str, theme: str = "dark") -> io.BytesIO:
+        """バックテスト＋将来予測のグラフを PNG で返す（theme: dark / light）。"""
         mode = self.item_mode(item_code)
         horizon = 12 if mode == "weekly" else 6
-        fig = self.model_handler.backtest_figure(self._demand(), item_code, mode, horizon=horizon)
+        fig = self.model_handler.backtest_figure(self._demand(), item_code, mode,
+                                                 horizon=horizon, theme=theme)
         buf = io.BytesIO()
         try:
             fig.set_size_inches(12, 6, forward=True)

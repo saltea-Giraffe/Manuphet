@@ -9,7 +9,7 @@ from __future__ import annotations
 import html
 import logging
 import traceback
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
@@ -198,8 +198,8 @@ def train_status() -> dict[str, Any]:
 
 
 @router.get("/api/forecast_plot")
-def forecast_plot(item_code: str) -> StreamingResponse:
-    buf = _call(lambda: _s().backtest_png(item_code.strip()), "forecast_plot")
+def forecast_plot(item_code: str, theme: Literal["dark", "light"] = "dark") -> StreamingResponse:
+    buf = _call(lambda: _s().backtest_png(item_code.strip(), theme=theme), "forecast_plot")
     return StreamingResponse(buf, media_type="image/png")
 
 
